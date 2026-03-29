@@ -13,13 +13,8 @@
       var messagesFromShopify = new Array(); 
       
       function sendToUnity(type, messageState) {
-          // Выводим в консоль то, что пришло из Shopify
-          console.log("➡️ [HTML] Получено из Shopify:", type, "| Состояние:", messageState);
-
           let state = (messageState === "false" || messageState === false) ? "false" : "true";
           
-          console.log("🚀 [HTML] Отправляем в Unity -> Метод:", type, "| Аргумент:", state);
-
           try {
               switch (type) {
                   case "Map": window.unityInstance.SendMessage('3 Glass short', 'MapFromJs', state); break;
@@ -29,10 +24,9 @@
                   case "OuterSideScreen": window.unityInstance.SendMessage('3 Glass short', 'OuterSideScreenFromJs', state); break;
                   case "BusSchedule": window.unityInstance.SendMessage('3 Glass short', 'BusScheduleFromJs', state); break;
                   case "Silluete": window.unityInstance.SendMessage('3 Glass short', 'SillueteFromJs', state); break;
-                  default: console.warn("⚠️ [HTML] Неизвестный тип сообщения:", type);
+                  default: break;
               }
           } catch (error) {
-              console.error("❌ [HTML] ОШИБКА Unity SendMessage! Проверьте имя объекта '3 Glass short' и наличие параметров:", error);
           }
       }
 
@@ -46,21 +40,18 @@
         productVersion: "0.1",
       }).then((unityInstance) => {
         window.unityInstance = unityInstance;
-        console.log("✅ [HTML] Unity Instance успешно загружен!");
         
         for (let i = 0; i < messagesFromShopify.length; i++) {
             sendToUnity(messagesFromShopify[i].type, messagesFromShopify[i].message);
         }
         messagesFromShopify = [];
       }).catch((err) => {
-          console.error("❌ [HTML] Ошибка критической загрузки Unity:", err);
       });
 
       window.addEventListener("message", function(event) {
           if (!event.data || !event.data.type) return;
 
           if (window.unityInstance === undefined) {
-              console.log("⏳ [HTML] Unity еще грузится, сообщение добавлено в очередь:", event.data.type);
               messagesFromShopify.push({ type: event.data.type, message: event.data.message });
           } else {
               sendToUnity(event.data.type, event.data.message);
