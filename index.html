@@ -38,25 +38,29 @@
         companyName: "DefaultCompany",
         productName: "New Unity Project",
         productVersion: "0.1",
-      }).then((unityInstance) => {
+    }).then((unityInstance) => {
         window.unityInstance = unityInstance;
         
         for (let i = 0; i < messagesFromShopify.length; i++) {
             sendToUnity(messagesFromShopify[i].type, messagesFromShopify[i].message);
         }
         messagesFromShopify = [];
-      }).catch((err) => {
-      });
 
-      window.addEventListener("message", function(event) {
-          if (!event.data || !event.data.type) return;
+        window.parent.postMessage({ type: "UNITY_READY" }, "*");
 
-          if (window.unityInstance === undefined) {
-              messagesFromShopify.push({ type: event.data.type, message: event.data.message });
-          } else {
-              sendToUnity(event.data.type, event.data.message);
-          }
-      });
-    </script>
+    }).catch((err) => {
+        console.error("Unity failed to load:", err);
+    });
+
+    window.addEventListener("message", function(event) {
+        if (!event.data || !event.data.type) return;
+
+        if (window.unityInstance === undefined) {
+            messagesFromShopify.push({ type: event.data.type, message: event.data.message });
+        } else {
+            sendToUnity(event.data.type, event.data.message);
+        }
+    });
+</script>
   </body>
 </html>
