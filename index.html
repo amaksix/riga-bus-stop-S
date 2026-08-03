@@ -3,87 +3,77 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity WebGL Player | New Unity Project</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unity WebGL Player | Bus Shelter RIGA S-Size</title>
+    <style>
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+      #unity-canvas { display: block; width: 100%; height: 600px; background: transparent; }
+    </style>
   </head>
-  <body style="text-align: center">
-    <canvas id="unity-canvas" style="width: 100%; height: 600px; background: transparent"></canvas>
+  <body>
+    <canvas id="unity-canvas"></canvas>
     <script src="Build/webGlBuild.loader.js"></script>
     <script>
-      const eventCustom = new Event("build");
-      var messagesFromShopify = new Array();
-      createUnityInstance(document.querySelector("#unity-canvas"), {
-        dataUrl: "Build/webGlBuild.data",
-        frameworkUrl: "Build/webGlBuild.framework.js",
-        codeUrl: "Build/webGlBuild.wasm",
-        streamingAssetsUrl: "StreamingAssets",
-        companyName: "DefaultCompany",
-        productName: "New Unity Project",
-        productVersion: "0.1",
-      }).then((unityInstance) => {
-    window.unityInstance = unityInstance;
-    console.log("Unity Instance", unityInstance);
-    //document.dispatchEvent(eventCustom);
-    for (let i = 0; i < messagesFromShopify.length; i++) {
-        const messageType = messagesFromShopify[i];
-        switch (messageType) {
-            case "Map":
-                window.unityInstance.SendMessage('3 Glass short', 'MapFromJs');
-                break;
-            case "InnerScreen":
-                window.unityInstance.SendMessage('3 Glass short', 'InnerScreenFromJs');
-                break;
-            case "OuterScreen":
-                window.unityInstance.SendMessage('3 Glass short', 'OuterScreenFromJs');
-                break;
-            case "InnerSideScreen":
-                window.unityInstance.SendMessage('3 Glass short', 'InnerSideScreenFromJs');
-                break;
-            case "OuterSideScreen":
-                window.unityInstance.SendMessage('3 Glass short', 'OuterSideScreenFromJs');
-                break;
-            case "BusSchedule":
-                window.unityInstance.SendMessage('3 Glass short', 'BusScheduleFromJs');
-                break;
-            case "Silluete":
-                window.unityInstance.SendMessage('3 Glass short', 'SillueteFromJs');
-                break;
-            // Add more cases for additional message types if needed
-            default:
-                // Handle unknown message types, if necessary
-                break;
+      (function () {
+        "use strict";
+
+        const UNITY_TARGET_OBJECT = "3 Glass short";
+        const METHOD_BY_TYPE = {
+          RearDisplay: "RearDisplayFromJs",
+          SideDisplay: "SideDisplayFromJs",
+          SideGlass: "SideGlassFromJs",
+          PosterFrame: "PosterFrameFromJs",
+          Silluete: "SillueteFromJs"
+        };
+
+        const queuedMessages = [];
+        let unityInstance;
+
+        function sendToUnity(type, message) {
+          const method = METHOD_BY_TYPE[type];
+          if (!method || !unityInstance) return;
+
+          try {
+            unityInstance.SendMessage(UNITY_TARGET_OBJECT, method, String(message));
+          } catch (error) {
+            console.error("Could not send " + type + " to Unity:", error);
+          }
         }
-    }
-   });
-    window.addEventListener("message", function(event) {
-      if( window.unityInstance === undefined) {
-        messagesFromShopify.push(event.data.type);
-      }
-      else
-      {
-         if (event.data.type === "Map") {       
-          window.unityInstance.SendMessage('3 Glass short', 'MapFromJs');
-         }
-         if (event.data.type === "InnerScreen") {
-            window.unityInstance.SendMessage('3 Glass short', 'InnerScreenFromJs');
-         }
-         if (event.data.type === "OuterScreen") {
-            window.unityInstance.SendMessage('3 Glass short', 'OuterScreenFromJs');
-         }
-         if (event.data.type === "InnerSideScreen") {
-            window.unityInstance.SendMessage('3 Glass short', 'InnerSideScreenFromJs');
-         }
-         if (event.data.type === "OuterSideScreen") {
-            window.unityInstance.SendMessage('3 Glass short', 'OuterSideScreenFromJs');
-         }
-         if (event.data.type === "BusSchedule") {
-            window.unityInstance.SendMessage('3 Glass short', 'BusScheduleFromJs');
-         }
-         if (event.data.type === "Silluete") {
-            window.unityInstance.SendMessage('3 Glass short', 'SillueteFromJs');
-         }
-      }
-     
-   });
+
+        window.addEventListener("message", function (event) {
+          if (event.source !== window.parent || !event.data || !METHOD_BY_TYPE[event.data.type]) return;
+
+          const message = {
+            type: event.data.type,
+            message: event.data.message
+          };
+
+          if (!unityInstance) queuedMessages.push(message);
+          else sendToUnity(message.type, message.message);
+        });
+
+        createUnityInstance(document.querySelector("#unity-canvas"), {
+          dataUrl: "Build/webGlBuild.data",
+          frameworkUrl: "Build/webGlBuild.framework.js",
+          codeUrl: "Build/webGlBuild.wasm",
+          streamingAssetsUrl: "StreamingAssets",
+          companyName: "DefaultCompany",
+          productName: "Bus Shelter RIGA S-Size",
+          productVersion: "1.0"
+        }).then(function (instance) {
+          unityInstance = instance;
+          window.unityInstance = instance;
+
+          while (queuedMessages.length > 0) {
+            const queued = queuedMessages.shift();
+            sendToUnity(queued.type, queued.message);
+          }
+
+          window.parent.postMessage({ type: "UNITY_READY" }, "*");
+        }).catch(function (error) {
+          console.error("Unity failed to load:", error);
+        });
+      }());
     </script>
   </body>
 </html>
