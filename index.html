@@ -105,31 +105,15 @@
           }
         );
 
-        createUnityInstance(
-          document.querySelector("#unity-canvas"),
-          {
-            dataUrl:
-              "Build/riga-bus-stop-s-new2.data.gz",
-
-            frameworkUrl:
-              "Build/riga-bus-stop-s-new2.framework.js.gz",
-
-            codeUrl:
-              "Build/riga-bus-stop-s-new2.wasm.gz",
-
-            streamingAssetsUrl:
-              "StreamingAssets",
-
-            companyName:
-              "DefaultCompany",
-
-            productName:
-              "Bus Shelter RIGA S-Size",
-
-            productVersion:
-              "1.0"
-          }
-        )
+       createUnityInstance(document.querySelector("#unity-canvas"), {
+  dataUrl: "Build/riga-bus-stop-s-new2.data",
+  frameworkUrl: "Build/riga-bus-stop-s-new2.framework.js",
+  codeUrl: "Build/riga-bus-stop-s-new2.wasm",
+  streamingAssetsUrl: "StreamingAssets",
+  companyName: "DefaultCompany",
+  productName: "Bus Shelter RIGA S-Size",
+  productVersion: "1.0"
+})
           .then(function (instance) {
             unityInstance = instance;
             window.unityInstance = instance;
