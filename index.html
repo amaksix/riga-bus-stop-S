@@ -43,6 +43,49 @@
       (function () {
         "use strict";
 
+        // --- Логика автоопределения оптимального DPR ---
+        function getOptimalDevicePixelRatio() {
+          const rawDPR = window.devicePixelRatio || 1;
+          
+          // Если экран стандартный (не Retina / не High-DPI)
+          if (rawDPR <= 1) return 1;
+
+          // Проверяем, мобильное ли это устройство или планшет (включая iPad)
+          const isMobileOrTablet = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+            || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+
+          if (isMobileOrTablet) {
+            // Проверяем модель GPU
+            let isWeakGPU = false;
+            try {
+              const gl = document.createElement('canvas').getContext('webgl');
+              if (gl) {
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                const renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : '';
+                // Ограничиваем только совсем старые / слабые чипы
+                if (/Mali-4|Mali-G3|Mali-G5|Adreno 3|Adreno 4|Adreno 50/i.test(renderer)) {
+                  isWeakGPU = true;
+                }
+              }
+            } catch (e) {
+              console.warn("Could not detect GPU", e);
+            }
+
+            if (isWeakGPU) {
+              return 1; // Слабое железо -> стандартный DPR для высокого FPS
+            }
+
+            // Для iPad и большинства современных планшетов/смартфонов
+            // DPR 1.5 дает отличную четкость и не перегружает GPU как честный 2.0/3.0
+            return Math.min(rawDPR, 1.5);
+          }
+
+          // Для ПК и ноутбуков с Retina / 4K дисплеями
+          return Math.min(rawDPR, 2.0);
+        }
+
+        const optimalDPR = getOptimalDevicePixelRatio();
+
         const UNITY_TARGET_OBJECT = "3 Glass short";
 
         const METHOD_BY_TYPE = {
@@ -105,15 +148,20 @@
           }
         );
 
-       createUnityInstance(document.querySelector("#unity-canvas"), {
-  dataUrl: "Build/riga-bus-stop-s-new2.data",
-  frameworkUrl: "Build/riga-bus-stop-s-new2.framework.js",
-  codeUrl: "Build/riga-bus-stop-s-new2.wasm",
-  streamingAssetsUrl: "StreamingAssets",
-  companyName: "DefaultCompany",
-  productName: "Bus Shelter RIGA S-Size",
-  productVersion: "1.0"
-})
+        createUnityInstance(document.querySelector("#unity-canvas"), {
+          dataUrl: "Build/riga-bus-stop-s-new2.data",
+          frameworkUrl: "Build/riga-bus-stop-s-new2.framework.js",
+          codeUrl: "Build/riga-bus-stop-s-new2.wasm",
+          streamingAssetsUrl: "StreamingAssets",
+          companyName: "DefaultCompany",
+          productName: "Bus Shelter RIGA S-Size",
+          productVersion: "1.0",
+          devicePixelRatio: optimalDPR, // <--- Включает четкость для iPad/Retina
+          webglContextAttributes: {
+            antialias: true,            // <--- Активирует браузерное сглаживание
+            powerPreference: "high-performance"
+          }
+        })
           .then(function (instance) {
             unityInstance = instance;
             window.unityInstance = instance;
